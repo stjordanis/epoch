@@ -180,7 +180,7 @@ serialize_for_client(#query{sender_id    = SenderId,
             R when R =/= undefined -> R;
             undefined -> <<>>
         end,
-    #{ <<"query_id">>     => aec_base58c:encode(oracle_query_id, id(I))
+    #{ <<"id">>           => aec_base58c:encode(oracle_query_id, id(I))
      , <<"sender_id">>    => aec_base58c:encode(id_hash, SenderId)
      , <<"sender_nonce">> => SenderNonce
      , <<"oracle_id">>    => aec_base58c:encode(id_hash, OracleId)

@@ -3482,7 +3482,7 @@
     "RegisteredOracle" : {
       "type" : "object",
       "properties" : {
-        "oracle_id" : {
+        "id" : {
           "$ref" : "#/definitions/EncodedHash"
         },
         "query_format" : {
@@ -3501,8 +3501,8 @@
       },
       "example" : {
         "expires" : 6,
-        "oracle_id" : { },
         "response_format" : "response_format",
+        "id" : { },
         "query_fee" : 0,
         "query_format" : "query_format"
       }
@@ -3516,7 +3516,7 @@
     "OracleQuery" : {
       "type" : "object",
       "properties" : {
-        "query_id" : {
+        "id" : {
           "$ref" : "#/definitions/EncodedHash"
         },
         "sender_id" : {
@@ -3555,11 +3555,11 @@
           "type" : "delta",
           "value" : 1
         },
-        "query_id" : { },
         "response" : "response",
         "query" : "query",
         "fee" : 5,
         "sender_nonce" : 0,
+        "id" : { },
         "sender_id" : null
       }
     },
@@ -3599,11 +3599,11 @@
             "type" : "delta",
             "value" : 1
           },
-          "query_id" : { },
           "response" : "response",
           "query" : "query",
           "fee" : 5,
           "sender_nonce" : 0,
+          "id" : { },
           "sender_id" : null
         }, {
           "expires" : 6,
@@ -3612,11 +3612,11 @@
             "type" : "delta",
             "value" : 1
           },
-          "query_id" : { },
           "response" : "response",
           "query" : "query",
           "fee" : 5,
           "sender_nonce" : 0,
+          "id" : { },
           "sender_id" : null
         } ]
       }

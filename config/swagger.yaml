@@ -2908,7 +2908,7 @@ definitions:
   RegisteredOracle:
     type: object
     properties:
-      oracle_id:
+      id:
         $ref: '#/definitions/EncodedHash'
       query_format:
         type: string
@@ -2926,7 +2926,7 @@ definitions:
   OracleQuery:
     type: object
     properties:
-      query_id:
+      id:
         $ref: '#/definitions/EncodedHash'
       sender_id:
         $ref: '#/definitions/EncodedHash'

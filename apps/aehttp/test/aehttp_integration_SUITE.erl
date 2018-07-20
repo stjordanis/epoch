@@ -1656,7 +1656,7 @@ post_oracle_register(Config) ->
     ok = post_tx(TxHash, Tx),
     aecore_suite_utils:mine_blocks_until(Node, fun() -> tx_in_chain(TxHash) end, 10),
     {ok, 200, Resp} = get_oracles_by_pubkey_sut(OracleId),
-    ?assertEqual(OracleId, maps:get(<<"oracle_id">>, Resp)),
+    ?assertEqual(OracleId, maps:get(<<"id">>, Resp)),
     {save_config, save_config([account_id, oracle_id, oracle_ttl_value], Config)}.
 
 post_oracle_extend(Config) ->
@@ -1671,7 +1671,7 @@ post_oracle_extend(Config) ->
     ok = post_tx(TxHash, Tx),
     aecore_suite_utils:mine_blocks_until(Node, fun() -> tx_in_chain(TxHash) end, 10),
     {ok, 200, Resp} = get_oracles_by_pubkey_sut(OracleId),
-    ?assertEqual(OracleId, maps:get(<<"oracle_id">>, Resp)),
+    ?assertEqual(OracleId, maps:get(<<"id">>, Resp)),
     ?assertEqual(?config(oracle_ttl_value_final, Config), maps:get(<<"expires">>, Resp)),
     {ok, 200, Resp1} = get_oracles_queries_by_pubkey_sut(OracleId, #{type => "all"}),
     ?assertEqual([], maps:get(<<"oracle_queries">>, Resp1)),
@@ -1701,7 +1701,7 @@ post_oracle_query(Config) ->
     [Query] = maps:get(<<"oracle_queries">>, Resp1),
     ?assertEqual(SenderId, maps:get(<<"sender_id">>, Query)),
     ?assertEqual(OracleId, maps:get(<<"oracle_id">>, Query)),
-    QueryId = maps:get(<<"query_id">>, Query),
+    QueryId = maps:get(<<"id">>, Query),
     Config1 = [{query_id, QueryId} | Config],
     {save_config, save_config([sender_id, oracle_id, query_id], Config1)}.
 
@@ -1721,7 +1721,7 @@ post_oracle_response(Config) ->
     {ok, 200, Resp} = get_oracles_queries_by_pubkey_sut(OracleId, #{type => "open"}),
     ?assertEqual([], maps:get(<<"oracle_queries">>, Resp)),
     {ok, 200, Resp1} = get_oracles_query_by_pubkey_and_query_id(OracleId, QueryId),
-    ?assertEqual(QueryId, maps:get(<<"query_id">>, Resp1)),
+    ?assertEqual(QueryId, maps:get(<<"id">>, Resp1)),
     ?assertEqual(OracleId, maps:get(<<"oracle_id">>, Resp1)),
     ?assertEqual(Response, maps:get(<<"response">>, Resp1)),
     ok.

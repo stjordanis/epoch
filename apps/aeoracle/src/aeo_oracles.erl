@@ -40,7 +40,7 @@
 -type query()    :: binary().             %% Don't use native types for queries
 -type response() :: binary(). %% Don't use native types for responses
 
--record(oracle, { oracle_id       :: aec_id:id()
+-record(oracle, { id              :: aec_id:id()
                 , query_format    :: type_format()
                 , response_format :: type_format()
                 , query_fee       :: amount()
@@ -79,7 +79,7 @@
 new(RTx, BlockHeight) ->
     Expires = aeo_utils:ttl_expiry(BlockHeight, aeo_register_tx:oracle_ttl(RTx)),
     AccountPubkey = aeo_register_tx:account_pubkey(RTx),
-    O = #oracle{ oracle_id       = aec_id:create(oracle, AccountPubkey)
+    O = #oracle{ id              = aec_id:create(oracle, AccountPubkey)
                , query_format    = aeo_register_tx:query_format(RTx)
                , response_format = aeo_register_tx:response_format(RTx)
                , query_fee       = aeo_register_tx:query_fee(RTx)
@@ -112,7 +112,7 @@ deserialize(Pubkey, Bin) ->
           serialization_template(?ORACLE_VSN),
           Bin
          ),
-    #oracle{ oracle_id       = aec_id:create(oracle, Pubkey)
+    #oracle{ id              = aec_id:create(oracle, Pubkey)
            , query_format    = QueryFormat
            , response_format = ResponseFormat
            , query_fee       = QueryFee
@@ -127,12 +127,12 @@ serialization_template(?ORACLE_VSN) ->
     ].
 
 -spec serialize_for_client(oracle()) -> map().
-serialize_for_client(#oracle{oracle_id       = OracleId,
+serialize_for_client(#oracle{id              = Id,
                              query_format    = QueryFormat,
                              response_format = ResponseFormat,
                              query_fee       = QueryFee,
                              expires         = Expires}) ->
-    #{ <<"oracle_id">>       => aec_base58c:encode(id_hash, OracleId)
+    #{ <<"id">>              => aec_base58c:encode(id_hash, Id)
      , <<"query_format">>    => QueryFormat
      , <<"response_format">> => ResponseFormat
      , <<"query_fee">>       => QueryFee
@@ -142,12 +142,12 @@ serialize_for_client(#oracle{oracle_id       = OracleId,
 %%% Getters
 
 -spec id(oracle()) -> aec_id:id().
-id(#oracle{oracle_id = OracleId}) ->
-    OracleId.
+id(#oracle{id = Id}) ->
+    Id.
 
 -spec pubkey(oracle()) -> aec_keys:pubkey().
-pubkey(#oracle{oracle_id = OracleId}) ->
-    aec_id:specialize(OracleId, oracle).
+pubkey(#oracle{id = Id}) ->
+    aec_id:specialize(Id, oracle).
 
 -spec query_format(oracle()) -> type_format().
 query_format(#oracle{query_format = QueryFormat}) ->
@@ -170,7 +170,7 @@ expires(#oracle{expires = Expires}) ->
 
 -spec set_pubkey(aec_keys:pubkey(), oracle()) -> oracle().
 set_pubkey(X, O) ->
-    O#oracle{oracle_id = aec_id:create(oracle, assert_field(pubkey, X))}.
+    O#oracle{id = aec_id:create(oracle, assert_field(pubkey, X))}.
 
 -spec set_query_format(type_format(), oracle()) -> oracle().
 set_query_format(X, O) ->
