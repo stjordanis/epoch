@@ -518,7 +518,7 @@ paths:
           schema:
             $ref: '#/definitions/Error'
       security:
-  /transactions:
+  /ng-transactions:
     post:
       tags:
         - external
@@ -1582,7 +1582,7 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
-  /transactions-obsolete:
+  /transactions:
     get:
       tags:
         - external

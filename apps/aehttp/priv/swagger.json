@@ -589,7 +589,7 @@
         }
       }
     },
-    "/transactions" : {
+    "/ng-transactions" : {
       "post" : {
         "tags" : [ "external", "transactions" ],
         "description" : "Post a new transaction",
@@ -1889,7 +1889,7 @@
         }
       }
     },
-    "/transactions-obsolete" : {
+    "/transactions" : {
       "get" : {
         "tags" : [ "external", "transactions" ],
         "description" : "Get transactions in the mempool",
