@@ -156,7 +156,7 @@ serialize_for_client(#contract{id           = Id,
      , <<"vm_version">>   => VmVersion
      , <<"log">>          => Log
      , <<"active">>       => Active
-     , <<"referrer_ids">> => [aec_base58c:encode(id_hash, Id) || Id <- ReferrerIds]
+     , <<"referrer_ids">> => [aec_base58c:encode(id_hash, RId) || RId <- ReferrerIds]
      , <<"deposit">>      => Deposit
      }.
 
