@@ -1489,19 +1489,19 @@ post_contract_and_call_tx(_Config) ->
     {ok, 200, #{<<"bytecode">> := Code}} = get_contract_bytecode(SophiaCode),
 
     {ok, EncodedInitCallData} = aect_sophia:encode_call_data(Code, <<"init">>, <<"()">>),
-    ValidEncoded = #{ owner => MinerAddress,
-                      code => Code,
+    ValidEncoded = #{ owner_id   => MinerAddress,
+                      code       => Code,
                       vm_version => 1,
-                      deposit => 2,
-                      amount => 1,
-                      gas => 300,
-                      gas_price => 1,
-                      fee => 1,
-                      call_data => EncodedInitCallData},
+                      deposit    => 2,
+                      amount     => 1,
+                      gas        => 300,
+                      gas_price  => 1,
+                      fee        => 1,
+                      call_data  => EncodedInitCallData},
 
     %% prepare a contract_create_tx and post it
     {ok, 200, #{<<"tx">> := EncodedUnsignedContractCreateTx,
-                <<"contract_address">> := EncodedContractPubKey}} =
+                <<"contract_id">> := EncodedContractPubKey}} =
         get_contract_create(ValidEncoded),
     %%%% {ok, ContractPubKey} = aec_base58c:safe_decode(contract_pubkey, EncodedContractPubKey),
     ContractCreateTxHash = sign_and_post_tx(EncodedUnsignedContractCreateTx),
@@ -1518,14 +1518,14 @@ post_contract_and_call_tx(_Config) ->
     ?assertMatch({ok, 200, _}, get_transactions_info_by_hash_sut(ContractCreateTxHash)),
 
     {ok, EncodedCallData} = aect_sophia:encode_call_data(Code, <<"main">>, <<"42">>),
-    ContractCallEncoded = #{ caller => MinerAddress,
-                             contract => EncodedContractPubKey,
-                             vm_version => 1,
-                             amount => 1,
-                             gas => 1000,
-                             gas_price => 1,
-                             fee => 1,
-                             call_data => EncodedCallData},
+    ContractCallEncoded = #{ caller_id   => MinerAddress,
+                             contract_id => EncodedContractPubKey,
+                             vm_version  => 1,
+                             amount      => 1,
+                             gas         => 1000,
+                             gas_price   => 1,
+                             fee         => 1,
+                             call_data   => EncodedCallData},
     {ok, 200, #{<<"tx">> := EncodedUnsignedContractCallTx}} = get_contract_call(ContractCallEncoded),
     ContractCallTxHash = sign_and_post_tx(EncodedUnsignedContractCallTx),
 
@@ -1574,19 +1574,19 @@ get_contract(_Config) ->
                                      InitArgument),
 
     ContractInitBalance = 1,
-    ValidEncoded = #{ owner => MinerAddress,
-                      code => Code,
+    ValidEncoded = #{ owner_id   => MinerAddress,
+                      code       => Code,
                       vm_version => 1,
-                      deposit => 2,
-                      amount => ContractInitBalance,
-                      gas => 300,
-                      gas_price => 1,
-                      fee => 1,
-                      call_data => EncodedInitCallData},
+                      deposit    => 2,
+                      amount     => ContractInitBalance,
+                      gas        => 300,
+                      gas_price  => 1,
+                      fee        => 1,
+                      call_data  => EncodedInitCallData},
 
     ValidDecoded = maps:merge(ValidEncoded,
-                              #{owner => aec_id:create(account, MinerPubkey),
-                                code => aeu_hex:hexstring_decode(Code),
+                              #{owner_id  => aec_id:create(account, MinerPubkey),
+                                code      => aeu_hex:hexstring_decode(Code),
                                 call_data => aeu_hex:hexstring_decode(EncodedInitCallData)}),
 
     unsigned_tx_positive_test(ValidDecoded, ValidEncoded, fun get_contract_create/1,
@@ -1594,7 +1594,7 @@ get_contract(_Config) ->
 
     %% prepare a contract_create_tx and post it
     {ok, 200, #{<<"tx">> := EncodedUnsignedContractCreateTx,
-                <<"contract_address">> := EncodedContractPubKey}} = get_contract_create(ValidEncoded),
+                <<"contract_id">> := EncodedContractPubKey}} = get_contract_create(ValidEncoded),
     ContractCreateTxHash = sign_and_post_tx(EncodedUnsignedContractCreateTx),
 
     %% Try to get the contract init call object while in mempool
@@ -1610,11 +1610,14 @@ get_contract(_Config) ->
 
     {ok, 200, #{<<"return_value">> := ReturnValue}} = get_contract_call_object(ContractCreateTxHash),
 
-    ?assertMatch({ok, 200, #{
-            <<"id">> := EncodedContractPubKey, <<"owner">> := MinerAddress,
-            <<"active">> := true, <<"deposit">> := 2, <<"vm_version">> := 1,
-            <<"referers">> := [], <<"log">> := <<>>
-        }}, get_contract_sut(EncodedContractPubKey)),
+    ?assertMatch({ok, 200, #{<<"id">>          := EncodedContractPubKey,
+                             <<"owner_id">>    := MinerAddress,
+                             <<"active">>      := true,
+                             <<"deposit">>     := 2,
+                             <<"vm_version">>  := 1,
+                             <<"referrer_ids">> := [],
+                             <<"log">>         := <<>>}},
+                 get_contract_sut(EncodedContractPubKey)),
     ?assertEqual({ok, 200, #{<<"bytecode">> => Code}}, get_contract_code_sut(EncodedContractPubKey)),
     ?assertMatch({ok, 200, #{<<"store">> := [
         #{<<"key">> := <<"0x00">>, <<"value">> := ReturnValue}
@@ -1923,7 +1926,7 @@ contract_transactions(_Config) ->    % miner has an account
                                      InitArgument),
 
     ContractInitBalance = 1,
-    ValidEncoded = #{ owner => MinerAddress,
+    ValidEncoded = #{ owner_id => MinerAddress,
                       code => Code,
                       vm_version => 1,
                       deposit => 2,
@@ -1934,7 +1937,7 @@ contract_transactions(_Config) ->    % miner has an account
                       call_data => EncodedInitCallData},
 
     ValidDecoded = maps:merge(ValidEncoded,
-                              #{owner => aec_id:create(account, MinerPubkey),
+                              #{owner_id => aec_id:create(account, MinerPubkey),
                                 code => aeu_hex:hexstring_decode(Code),
                                 call_data => aeu_hex:hexstring_decode(EncodedInitCallData)}),
 
@@ -1943,7 +1946,7 @@ contract_transactions(_Config) ->    % miner has an account
 
     %% prepare a contract_create_tx and post it
     {ok, 200, #{<<"tx">> := EncodedUnsignedContractCreateTx,
-                <<"contract_address">> := EncodedContractPubKey}} =
+                <<"contract_id">> := EncodedContractPubKey}} =
         get_contract_create(ValidEncoded),
     {ok, ContractPubKey} = aec_base58c:safe_decode(contract_pubkey, EncodedContractPubKey),
     ContractCreateTxHash = sign_and_post_tx(EncodedUnsignedContractCreateTx),
@@ -1962,10 +1965,10 @@ contract_transactions(_Config) ->    % miner has an account
 
     %% Get the contract init call object
     {ok, 200, InitCallObject} = get_contract_call_object(ContractCreateTxHash),
-    ?assertEqual(MinerAddress, maps:get(<<"caller_address">>, InitCallObject)),
+    ?assertEqual(MinerAddress, maps:get(<<"caller_id">>, InitCallObject)),
     ?assertEqual(get_tx_nonce(ContractCreateTxHash), maps:get(<<"caller_nonce">>, InitCallObject)),
     ?assertEqual(aec_base58c:encode(contract_pubkey, ContractPubKey),
-        maps:get(<<"contract_address">>, InitCallObject)),
+        maps:get(<<"contract_id">>, InitCallObject)),
     ?assertEqual(maps:get(gas_price, ValidDecoded), maps:get(<<"gas_price">>, InitCallObject)),
     ?assertMatch({Used, Limit} when
         is_integer(Used) andalso
@@ -1995,8 +1998,8 @@ contract_transactions(_Config) ->    % miner has an account
                                      Argument),
 
 
-    ContractCallEncoded = #{ caller => MinerAddress,
-                             contract => EncodedContractPubKey,
+    ContractCallEncoded = #{ caller_id => MinerAddress,
+                             contract_id => EncodedContractPubKey,
                              vm_version => 1,
                              amount => 1,
                              gas => 1000,
@@ -2005,8 +2008,8 @@ contract_transactions(_Config) ->    % miner has an account
                              call_data => EncodedCallData},
 
     ContractCallDecoded = maps:merge(ContractCallEncoded,
-                              #{caller => aec_id:create(account, MinerPubkey),
-                                contract => aec_id:create(contract, ContractPubKey),
+                              #{caller_id => aec_id:create(account, MinerPubkey),
+                                contract_id => aec_id:create(contract, ContractPubKey),
                                 call_data => aeu_hex:hexstring_decode(EncodedCallData)}),
 
     unsigned_tx_positive_test(ContractCallDecoded, ContractCallEncoded,
@@ -2027,10 +2030,10 @@ contract_transactions(_Config) ->    % miner has an account
 
     %% Get the call object
     {ok, 200, CallObject} = get_contract_call_object(ContractCallTxHash),
-    ?assertEqual(MinerAddress, maps:get(<<"caller_address">>, CallObject, <<>>)),
+    ?assertEqual(MinerAddress, maps:get(<<"caller_id">>, CallObject, <<>>)),
     ?assertEqual(get_tx_nonce(ContractCallTxHash), maps:get(<<"caller_nonce">>, CallObject)),
     ?assertEqual(aec_base58c:encode(contract_pubkey, ContractPubKey),
-                 maps:get(<<"contract_address">>, CallObject, <<>>)),
+                 maps:get(<<"contract_id">>, CallObject, <<>>)),
     ?assertEqual(maps:get(gas_price, ContractCallDecoded), maps:get(<<"gas_price">>, CallObject)),
     ?assertMatch({Used, Limit} when
       is_integer(Used) andalso
@@ -2056,8 +2059,8 @@ contract_transactions(_Config) ->    % miner has an account
     ?assertEqual(DecodedReturnValue, DecodedCallResult),
     #{<<"value">> := 42} = DecodedReturnValue,
 
-    ComputeCCallEncoded = #{ caller => MinerAddress,
-                             contract => EncodedContractPubKey,
+    ComputeCCallEncoded = #{ caller_id => MinerAddress,
+                             contract_id => EncodedContractPubKey,
                              vm_version => 1,
                              amount => 1,
                              gas => 1000,
@@ -2069,8 +2072,8 @@ contract_transactions(_Config) ->    % miner has an account
     {ok, EncodedCallData} = aect_sophia:encode_call_data(Code, Function,
                                                          Argument),
     ComputeCCallDecoded = maps:merge(ComputeCCallEncoded,
-                              #{caller => aec_id:create(account, MinerPubkey),
-                                contract => aec_id:create(contract, ContractPubKey),
+                              #{caller_id => aec_id:create(account, MinerPubkey),
+                                contract_id => aec_id:create(contract, ContractPubKey),
                                 call_data => aeu_hex:hexstring_decode(EncodedCallData)}),
 
     unsigned_tx_positive_test(ComputeCCallDecoded, ComputeCCallEncoded,
@@ -2089,9 +2092,9 @@ contract_transactions(_Config) ->    % miner has an account
 
     %% Get the call object
     {ok, 200, CallObject1} = get_contract_call_object(ContractCallComputeTxHash),
-    ?assertEqual(MinerAddress, maps:get(<<"caller_address">>, CallObject1, <<>>)),
+    ?assertEqual(MinerAddress, maps:get(<<"caller_id">>, CallObject1, <<>>)),
     ?assertEqual(aec_base58c:encode(contract_pubkey, ContractPubKey),
-                 maps:get(<<"contract_address">>, CallObject1, <<>>)),
+                 maps:get(<<"contract_id">>, CallObject1, <<>>)),
 
     {ok, 200, #{<<"data">> := DecodedCallReturnValue}} =
         get_contract_decode_data(
@@ -2199,7 +2202,7 @@ contract_create_transaction_init_error(_Config) ->
 
     %% prepare a contract_create_tx and post it
     {ok, 200, #{<<"tx">> := EncodedUnsignedContractCreateTx,
-        <<"contract_address">> := EncodedContractPubKey}} =
+        <<"contract_id">> := EncodedContractPubKey}} =
         get_contract_create(ValidEncoded),
     {ok, ContractPubKey} = aec_base58c:safe_decode(contract_pubkey, EncodedContractPubKey),
     ContractCreateTxHash = sign_and_post_tx(EncodedUnsignedContractCreateTx),
@@ -2215,10 +2218,10 @@ contract_create_transaction_init_error(_Config) ->
 
     %% Get the contract init call object
     {ok, 200, InitCallObject} = get_contract_call_object(ContractCreateTxHash),
-    ?assertEqual(MinerAddress, maps:get(<<"caller_address">>, InitCallObject)),
+    ?assertEqual(MinerAddress, maps:get(<<"caller_id">>, InitCallObject)),
     ?assertEqual(get_tx_nonce(ContractCreateTxHash), maps:get(<<"caller_nonce">>, InitCallObject)),
     ?assertEqual(aec_base58c:encode(contract_pubkey, ContractPubKey),
-        maps:get(<<"contract_address">>, InitCallObject)),
+        maps:get(<<"contract_id">>, InitCallObject)),
     ?assertEqual(maps:get(gas_price, ValidDecoded), maps:get(<<"gas_price">>, InitCallObject)),
     ?assertMatch({Used, Limit} when
         is_integer(Used) andalso
