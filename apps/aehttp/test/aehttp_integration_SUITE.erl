@@ -2107,35 +2107,35 @@ contract_transactions(_Config) ->    % miner has an account
     %% Invalid hashes
     %% invalid owner hash
     <<_, InvalidHash/binary>> = MinerAddress,
-    {ok, 400, #{<<"reason">> := <<"Invalid hash: owner">>}} =
-        get_contract_create(maps:put(owner, InvalidHash, ValidEncoded)),
+    {ok, 400, #{<<"reason">> := <<"Invalid hash: owner_id">>}} =
+        get_contract_create(maps:put(owner_id, InvalidHash, ValidEncoded)),
     % invalid caller hash
-    {ok, 400, #{<<"reason">> := <<"Invalid hash: caller">>}} =
-        get_contract_call(maps:put(caller, InvalidHash, ContractCallEncoded)),
+    {ok, 400, #{<<"reason">> := <<"Invalid hash: caller_id">>}} =
+        get_contract_call(maps:put(caller_id, InvalidHash, ContractCallEncoded)),
     % invalid caller hash
-    {ok, 400, #{<<"reason">> := <<"Invalid hash: caller">>}} =
-        get_contract_call_compute(maps:put(caller, InvalidHash,
+    {ok, 400, #{<<"reason">> := <<"Invalid hash: caller_id">>}} =
+        get_contract_call_compute(maps:put(caller_id, InvalidHash,
                                            ComputeCCallEncoded)),
     %% account not found
     RandAddress = aec_base58c:encode(account_pubkey, random_hash()),
     RandContractAddress =aec_base58c:encode(contract_pubkey, random_hash()),
     %% owner not found
-    {ok, 404, #{<<"reason">> := <<"Account of owner not found">>}} =
-        get_contract_create(maps:put(owner, RandAddress, ValidEncoded)),
+    {ok, 404, #{<<"reason">> := <<"Account of owner_id not found">>}} =
+        get_contract_create(maps:put(owner_id, RandAddress, ValidEncoded)),
     %% caller not found
-    {ok, 404, #{<<"reason">> := <<"Account of caller not found">>}} =
-        get_contract_call(maps:put(caller, RandAddress, ContractCallEncoded)),
+    {ok, 404, #{<<"reason">> := <<"Account of caller_id not found">>}} =
+        get_contract_call(maps:put(caller_id, RandAddress, ContractCallEncoded)),
     %% contract not found
-    {ok, 404, #{<<"reason">> := <<"Contract address for key contract not found">>}} =
-        get_contract_call(maps:put(contract, RandContractAddress,
+    {ok, 404, #{<<"reason">> := <<"Contract address for key contract_id not found">>}} =
+        get_contract_call(maps:put(contract_id, RandContractAddress,
                                    ContractCallEncoded)),
     %% caller not found
-    {ok, 404, #{<<"reason">> := <<"Account of caller not found">>}} =
-        get_contract_call_compute(maps:put(caller, RandAddress,
+    {ok, 404, #{<<"reason">> := <<"Account of caller_id not found">>}} =
+        get_contract_call_compute(maps:put(caller_id, RandAddress,
                                            ComputeCCallEncoded)),
     %% contract not found
-    {ok, 404, #{<<"reason">> := <<"Contract address for key contract not found">>}} =
-        get_contract_call_compute(maps:put(contract, RandContractAddress,
+    {ok, 404, #{<<"reason">> := <<"Contract address for key contract_id not found">>}} =
+        get_contract_call_compute(maps:put(contract_id, RandContractAddress,
                                            ComputeCCallEncoded)),
 
     %% Invalid hexstrings
@@ -2186,15 +2186,15 @@ contract_create_transaction_init_error(_Config) ->
         aect_sophia:encode_call_data(Code,
             InitFunction,
             InitArgument),
-    ValidEncoded = #{ owner => MinerAddress,
-        code => Code,
-        vm_version => 1,
-        deposit => 2,
-        amount => 1,
-        gas => 30,
-        gas_price => 1,
-        fee => 1,
-        call_data => EncodedInitCallData},
+    ValidEncoded = #{ owner_id   => MinerAddress,
+                      code       => Code,
+                      vm_version => 1,
+                      deposit    => 2,
+                      amount     => 1,
+                      gas        => 30,
+                      gas_price  => 1,
+                      fee        => 1,
+                      call_data  => EncodedInitCallData},
     ValidDecoded = maps:merge(ValidEncoded,
         #{owner => MinerPubkey,
             code => aeu_hex:hexstring_decode(Code),
