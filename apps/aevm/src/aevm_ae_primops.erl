@@ -117,7 +117,7 @@ oracle_call_query(Value, Data, State) ->
     Value,
     [Oracle]  = get_args([word], Data),  %% We need the oracle address before we can decode the query
     OracleKey = <<Oracle:256>>,
-    case call_chain1(fun(API, ChainState) -> API:oracle_query_spec(OracleKey, ChainState) end, State) of
+    case call_chain1(fun(API, ChainState) -> API:oracle_query_format(OracleKey, ChainState) end, State) of
         {ok, QueryType} ->
             ArgumentTypes = [word, QueryType, word, word],
             [_Oracle, Q, QTTL, RTTL] = get_args(ArgumentTypes, Data),
@@ -134,7 +134,7 @@ oracle_call_query(Value, Data, State) ->
 oracle_call_respond(_Value, Data, State) ->
     [Oracle, Query] = get_args([word, word], Data),
     OracleKey = <<Oracle:256>>,
-    case call_chain1(fun(API, ChainState) -> API:oracle_response_spec(OracleKey, ChainState) end, State) of
+    case call_chain1(fun(API, ChainState) -> API:oracle_response_format(OracleKey, ChainState) end, State) of
         {ok, RType} ->
             ArgumentTypes = [word, word, word, RType],
             [_, _, Sign, R] = get_args(ArgumentTypes, Data),

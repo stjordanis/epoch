@@ -3729,7 +3729,7 @@ list_oracle_queries(_Config) ->
                [ aeo_query:id(APubKey, N, OPubKey2) || N <- lists:seq(5, 8) ],
 
     %% Mine a block to effect the queries
-    aecore_suite_utils:mine_blocks(aecore_suite_utils:node_name(?NODE), 2),
+    aecore_suite_utils:mine_micro_blocks(aecore_suite_utils:node_name(?NODE), 1),
 
     %% Now we can test the oracle query listing...
     Queriess = [ get_list_oracle_queries(OPubKey, 4) || {OPubKey, _} <- OKeyPairs ],
@@ -3757,13 +3757,13 @@ list_oracle_queries(_Config) ->
 register_oracle(ChainHeight, PubKey, PrivKey, Nonce, QueryFee, TTL) ->
     TTLFee = aeo_utils:ttl_fee(1, aeo_utils:ttl_delta(ChainHeight, TTL)),
     AccountId = aec_id:create(account, PubKey),
-    {ok, RegTx} = aeo_register_tx:new(#{account_id    => AccountId,
-                                        nonce         => Nonce,
-                                        query_spec    => <<"TODO">>,
-                                        response_spec => <<"TODO">>,
-                                        query_fee     => QueryFee,
-                                        oracle_ttl    => TTL,
-                                        fee           => 4 + TTLFee}),
+    {ok, RegTx} = aeo_register_tx:new(#{account_id      => AccountId,
+                                        nonce           => Nonce,
+                                        query_format    => <<"TODO">>,
+                                        response_format => <<"TODO">>,
+                                        query_fee       => QueryFee,
+                                        oracle_ttl      => TTL,
+                                        fee             => 4 + TTLFee}),
     SignedTx = aec_test_utils:sign_tx(RegTx, PrivKey),
     SendTx = aec_base58c:encode(transaction, aetx_sign:serialize_to_binary(SignedTx)),
     post_tx(SendTx).

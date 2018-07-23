@@ -20,10 +20,10 @@
           oracle_get_question/3,
           oracle_query/6,
           oracle_query_fee/2,
-          oracle_query_spec/2,
+          oracle_query_format/2,
           oracle_register/7,
           oracle_respond/5,
-          oracle_response_spec/2,
+          oracle_response_format/2,
           aens_resolve/4,
           aens_preclaim/4,
           aens_claim/5,
@@ -223,7 +223,7 @@ oracle_query_fee(Oracle, #state{trees = Trees} =_State) ->
             {ok, none}
     end.
 
-oracle_query_spec(Oracle, #state{ trees   = Trees} =_State) ->
+oracle_query_format(Oracle, #state{ trees   = Trees} =_State) ->
     case aeo_state_tree:lookup_oracle(Oracle, aec_trees:oracles(Trees)) of
         {value, O} ->
             BinaryFormat = aeo_oracles:query_format(O),
@@ -240,7 +240,7 @@ oracle_query_spec(Oracle, #state{ trees   = Trees} =_State) ->
 
 
 
-oracle_response_spec(Oracle, #state{ trees   = Trees} =_State) ->
+oracle_response_format(Oracle, #state{ trees   = Trees} =_State) ->
     case aeo_state_tree:lookup_oracle(Oracle, aec_trees:oracles(Trees)) of
         {value, O} ->
             BinaryFormat = aeo_oracles:response_format(O),
