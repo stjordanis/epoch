@@ -78,6 +78,7 @@
 -export_type([ contract/0
              , amount/0
              , id/0
+             , pubkey/0
              , serialized/0
              , vm_version/0
              , store/0
