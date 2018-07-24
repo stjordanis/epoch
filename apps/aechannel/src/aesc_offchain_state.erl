@@ -123,14 +123,14 @@ make_update_tx(Updates, #state{signed_txs=[SignedTx|_], trees=Trees}, Opts) ->
     Tx = aetx_sign:tx(SignedTx),
     {Mod, TxI} = aetx:specialize_callback(Tx),
     Round = Mod:round(TxI),
-    ChannelId = Mod:channel_id(TxI),
+    ChannelPubKey = Mod:channel_pubkey(TxI),
     Trees1 = apply_updates(Updates, Trees, Opts),
     StateHash = aec_trees:hash(Trees1),
     {ok, OffchainTx} =
-        aesc_offchain_tx:new(#{channel_id    => aec_id:create(channel, ChannelId),
-                              state_hash     => StateHash,
-                              updates        => Updates,
-                              round          => Round + 1}),
+        aesc_offchain_tx:new(#{channel_id => aec_id:create(channel, ChannelPubKey),
+                               state_hash => StateHash,
+                               updates    => Updates,
+                               round      => Round + 1}),
     OffchainTx.
 
 apply_updates(Updates, Trees, Opts) ->
@@ -273,7 +273,7 @@ update_for_client({?OP_DEPOSIT, From, From, Amount}) ->
 -spec balance(aec_keys:pubkey(), state()) -> {ok, non_neg_integer()}
                                            | {error, not_found}.
 balance(Pubkey, #state{trees=Trees}) ->
-    AccTrees = aec_trees:accounts(Trees), 
+    AccTrees = aec_trees:accounts(Trees),
     case aec_accounts_trees:lookup(Pubkey, AccTrees) of
         none -> {error, not_found};
         {value, Account} -> {ok, aec_accounts:balance(Account)}

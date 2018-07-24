@@ -899,7 +899,7 @@ handle_call_(open, {upd_deposit, #{amount := Amt} = Opts}, From,
         {ok, _Other}  -> error(conflicting_accounts);
         error         -> ok
     end,
-    {ok, DepTx} = dep_tx_for_signing(Opts#{from => FromPub}, D),
+    {ok, DepTx} = dep_tx_for_signing(Opts#{from_id => FromPub}, D),
     ok = request_signing(deposit_tx, DepTx, D),
     gen_statem:reply(From, ok),
     D1 = D#data{latest = {sign, deposit_tx, DepTx}},
@@ -912,7 +912,7 @@ handle_call_(open, {upd_withdraw, #{amount := Amt} = Opts}, From,
         {ok, _Other}  -> error(conflicting_accounts);
         error         -> ok
     end,
-    {ok, DepTx} = wdraw_tx_for_signing(Opts#{to => ToPub}, D),
+    {ok, DepTx} = wdraw_tx_for_signing(Opts#{to_id => ToPub}, D),
     ok = request_signing(withdraw_tx, DepTx, D),
     gen_statem:reply(From, ok),
     D1 = D#data{latest = {sign, withdraw_tx, DepTx}},
@@ -978,11 +978,11 @@ send_open_msg(#data{opts       = Opts,
     ChainHash = aec_chain:genesis_hash(),
     %%
     %% Generate a temporary channel id
-    ChannelId = aesc_channels:id(Initiator,
-                                 erlang:unique_integer(),
-                                 Responder),
+    ChannelPubKey = aesc_channels:pubkey(Initiator,
+                                         erlang:unique_integer(),
+                                         Responder),
     Msg = #{ chain_hash           => ChainHash
-           , temporary_channel_id => ChannelId
+           , temporary_channel_id => ChannelPubKey
            , lock_period          => LockPeriod
            , push_amount          => PushAmount
            , initiator_amount     => InitiatorAmount
@@ -991,7 +991,7 @@ send_open_msg(#data{opts       = Opts,
            , initiator            => Initiator
            },
     aesc_session_noise:channel_open(Sn, Msg),
-    Data#data{channel_id = ChannelId}.
+    Data#data{channel_id = ChannelPubKey}.
 
 check_open_msg(#{ chain_hash           := ChainHash
                 , temporary_channel_id := ChanId
@@ -1056,29 +1056,29 @@ check_accept_msg(#{ chain_hash           := ChainHash
             {error, chain_hash_mismatch}
     end.
 
-dep_tx_for_signing(#{from := From} = Opts, #data{on_chain_id = ChanId, state=State}) ->
+dep_tx_for_signing(#{from_id := FromId} = Opts, #data{on_chain_id = ChanId, state=State}) ->
     StateHash = aesc_offchain_state:hash(State),
     {LastRound, _} = aesc_offchain_state:get_latest_signed_tx(State),
-    Def = deposit_tx_defaults(ChanId, From, maps:get(ttl, Opts, undefined)),
+    Def = deposit_tx_defaults(ChanId, FromId, maps:get(ttl, Opts, undefined)),
     Opts1 = maps:merge(Def, Opts),
     Opts2 = maps:merge(Opts1, #{state_hash => StateHash,
                                 round      => LastRound + 1,
                                 channel_id => aec_id:create(channel, ChanId),
-                                from       => aec_id:create(account, From)
+                                from_id    => aec_id:create(account, FromId)
                                }),
     lager:debug("deposit_tx Opts = ~p", [Opts2]),
     {ok, _} = Ok = aesc_deposit_tx:new(Opts2),
     Ok.
 
-wdraw_tx_for_signing(#{to := To} = Opts, #data{on_chain_id = ChanId, state=State}) ->
+wdraw_tx_for_signing(#{to_id := ToId} = Opts, #data{on_chain_id = ChanId, state=State}) ->
     StateHash = aesc_offchain_state:hash(State),
     {LastRound, _} = aesc_offchain_state:get_latest_signed_tx(State),
-    Def = withdraw_tx_defaults(ChanId, To, maps:get(ttl, Opts, undefined)),
+    Def = withdraw_tx_defaults(ChanId, ToId, maps:get(ttl, Opts, undefined)),
     Opts1 = maps:merge(Def, Opts),
     Opts2 = maps:merge(Opts1, #{state_hash => StateHash,
                                 round      => LastRound + 1,
                                 channel_id => aec_id:create(channel, ChanId),
-                                to         => aec_id:create(account, To)
+                                to_id      => aec_id:create(account, ToId)
                                }),
     lager:debug("withdraw_tx Opts = ~p", [Opts2]),
     {ok, _} = Ok = aesc_withdraw_tx:new(Opts2),
@@ -1091,9 +1091,9 @@ create_tx_for_signing(#data{opts = #{initiator := Initiator,
     Def = create_tx_defaults(Initiator),
     Opts1 = maps:merge(Def, Opts),
     lager:debug("create_tx Opts = ~p", [Opts1]),
-    Opts2 = Opts1#{state_hash => StateHash,
-                   initiator  => aec_id:create(account, Initiator),
-                   responder  => aec_id:create(account, Responder)
+    Opts2 = Opts1#{state_hash    => StateHash,
+                   initiator_id  => aec_id:create(account, Initiator),
+                   responder_id  => aec_id:create(account, Responder)
                   },
     {ok, _} = Ok = aesc_create_tx:new(Opts2),
     Ok.
@@ -1664,9 +1664,9 @@ start_min_depth_watcher(Type, SignedTx,
 on_chain_id(#data{on_chain_id = ID} = D, _, _, _) when ID =/= undefined ->
     {ID, D};
 on_chain_id(D, Initiator, Nonce, Responder) ->
-    ID = aesc_channels:id(Initiator, Nonce, Responder),
-    evt({on_chain_id, ID}),
-    {ID, D#data{on_chain_id = ID}}.
+    PubKey = aesc_channels:pubkey(Initiator, Nonce, Responder),
+    evt({on_chain_id, PubKey}),
+    {PubKey, D#data{on_chain_id = PubKey}}.
 
 
 gproc_register(#data{role = Role, channel_id = ChanId}) ->

@@ -335,7 +335,7 @@ create_channel_(Cfg, Debug) ->
                        error(Err, erlang:get_stacktrace())
                end,
     log(Debug, "mining blocks on dev1 for minimum depth", []),
-    CurrentHeight = 
+    CurrentHeight =
         case rpc(dev1, aec_chain, top_header, []) of
             undefined -> 0;
             Header -> aec_headers:height(Header)

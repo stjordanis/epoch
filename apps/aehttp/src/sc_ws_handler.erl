@@ -12,7 +12,7 @@
 -export([terminate/3]).
 
 -record(handler, {fsm_pid            :: pid() | undefined,
-                  channel_id         :: aesc_channels:id() | undefined,
+                  channel_id         :: aesc_channels:pubkey() | undefined,
                   job_id             :: term(),
                   role               :: initiator | responder | undefined,
                   host               :: binary() | undefined,
@@ -303,10 +303,10 @@ process_incoming(Msg, _State) ->
 process_fsm(#{type := sign,
               tag  := Tag,
               info := Tx}) when Tag =:= create_tx
-                         orelse Tag =:= deposit_tx 
-                         orelse Tag =:= deposit_created 
-                         orelse Tag =:= withdraw_tx 
-                         orelse Tag =:= withdraw_created 
+                         orelse Tag =:= deposit_tx
+                         orelse Tag =:= deposit_created
+                         orelse Tag =:= withdraw_tx
+                         orelse Tag =:= withdraw_created
                          orelse Tag =:= shutdown
                          orelse Tag =:= shutdown_ack
                          orelse Tag =:= funding_created
