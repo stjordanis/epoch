@@ -1621,7 +1621,7 @@ paths:
         '200':
           description: Calculated commitment hash
           schema:
-            $ref: '#/definitions/NameCommitmentHash'
+            $ref: '#/definitions/CommitmentHash'
         '400':
           description: Name validation failed
           schema:
@@ -1887,7 +1887,7 @@ paths:
         '200':
           description: successful operation
           schema:
-            $ref: '#/definitions/NameCommitmentHash'
+            $ref: '#/definitions/CommitmentHash'
         '400':
           description: Name preclaim transaction validation error
           schema:
@@ -3144,33 +3144,34 @@ definitions:
   NameEntry:
     type: object
     properties:
-      name:
-        type: string
-      name_hash:
-        type: string
-      name_ttl:
+      id:
+        $ref: '#/definitions/EncodedHash'
+      expires:
         type: integer
         format: int64
       pointers:
-        type: string
+        type: array
+        items:
+          $ref: '#/definitions/NamePointer'
   NamePreclaimTx:
     type: object
     properties:
-      commitment:
+      commitment_id:
         type: string
+        $ref: '#/definitions/EncodedHash'
       fee:
         type: integer
         format: int64
       ttl:
         type: integer
         format: int64
-      account:
+      account_id:
         $ref: '#/definitions/EncodedHash'
       nonce:
         type: integer
         format: int64
     required:
-    - commitment
+    - commitment_id
     - fee
   NameClaimTx:
     type: object
@@ -3186,7 +3187,7 @@ definitions:
       ttl:
         type: integer
         format: int64
-      account:
+      account_id:
         $ref: '#/definitions/EncodedHash'
       nonce:
         type: integer
@@ -3198,13 +3199,16 @@ definitions:
   NameUpdateTx:
     type: object
     properties:
-      name_hash:
+      name_id:
+        $ref: '#/definitions/EncodedHash'
         type: string
       name_ttl:
         type: integer
         format: int64
       pointers:
-        type: string
+        type: array
+        items:
+          $ref: '#/definitions/NamePointer'
       client_ttl:
         type: integer
         format: int64
@@ -3214,13 +3218,13 @@ definitions:
       ttl:
         type: integer
         format: int64
-      account:
+      account_id:
         $ref: '#/definitions/EncodedHash'
       nonce:
         type: integer
         format: int64
     required:
-    - name_hash
+    - name_id
     - name_ttl
     - client_ttl
     - pointers
@@ -3228,54 +3232,61 @@ definitions:
   NameTransferTx:
     type: object
     properties:
-      name_hash:
-        type: string
-      recipient_pubkey:
-        type: string
+      name_id:
+        $ref: '#/definitions/EncodedHash'
+      recipient_id:
+        $ref: '#/definitions/EncodedHash'
       fee:
         type: integer
         format: int64
       ttl:
         type: integer
         format: int64
-      account:
+      account_id:
         $ref: '#/definitions/EncodedHash'
       nonce:
         type: integer
         format: int64
     required:
-    - name_hash
-    - recipient_pubkey
+    - name_id
+    - recipient_id
     - fee
   NameRevokeTx:
     type: object
     properties:
-      name_hash:
-        type: string
+      name_id:
+        $ref: '#/definitions/EncodedHash'
       fee:
         type: integer
         format: int64
       ttl:
         type: integer
         format: int64
-      account:
+      account_id:
         $ref: '#/definitions/EncodedHash'
       nonce:
         type: integer
         format: int64
     required:
-    - name_hash
+    - name_id
     - fee
-  NameCommitmentHash:
+  CommitmentHash:
     type: object
     properties:
-      commitment:
-        type: string
+      commitment_id:
+        $ref: '#/definitions/EncodedHash'
   NameHash:
     type: object
     properties:
-      name_hash:
+      name_id:
+        $ref: '#/definitions/EncodedHash'
+  NamePointer:
+    type: object
+    properties:
+      key:
         type: string
+      id:
+        $ref: '#/definitions/EncodedHash'
   Channel:
     type: object
     properties:
