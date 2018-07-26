@@ -3599,8 +3599,8 @@ channel_update(#{initiator := IConnPid, responder :=RConnPid},
     %% verify contents
     {channel_offchain_tx, OffchainTx} = aetx:specialize_type(UnsignedStateTx),
     [Update] = aesc_offchain_tx:updates(OffchainTx),
-    Expected = aesc_offchain_update:op_transfer(StarterPubkey,
-                                                AcknowledgerPubkey, Amount),
+    Expected = aesc_offchain_update:op_transfer(aec_id:create(account, StarterPubkey),
+                                                aec_id:create(account, AcknowledgerPubkey), Amount),
     Expected = Update,
 
 
