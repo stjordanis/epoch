@@ -23,6 +23,12 @@
         , sophia_state/1
         , sophia_spend/1
         , sophia_oracles/1
+        , sophia_oracles_excessive_query_fee/1
+        %% , sophia_oracles_insufficient_query_fee/1
+        %% , sophia_oracles_insufficient_register_ttl_gas/1 %% XXX Separate test for insufficient minimum tx gas?
+        %% , sophia_oracles_insufficient_extend_ttl_gas/1 %% XXX Separate test for insufficient minimum tx gas?
+        %% , sophia_oracles_insufficient_query_ttl_gas/1 %% XXX Separate test for insufficient minimum tx gas?
+        %% , sophia_oracles_insufficient_response_ttl_gas/1 %% XXX Separate test for insufficient minimum tx gas?
         , sophia_maps/1
         , sophia_variant_types/1
         , sophia_fundme/1
@@ -70,6 +76,7 @@ groups() ->
                                  sophia_state,
                                  sophia_spend,
                                  sophia_oracles,
+                                 sophia_oracles_excessive_query_fee,
                                  sophia_maps,
                                  sophia_variant_types,
                                  sophia_fundme,
@@ -567,6 +574,32 @@ sophia_oracles(_Cfg) ->
     Question1    = {1, <<"birds fly?">>},
     Answer       = {yesAnswer, {how, <<"birds fly?">>}, <<"magic">>, 1337},
     {some, Answer} = ?call(call_contract, Acc, Ct1, complexOracle, {option, AnswerType}, {Question1, 0}),
+    ok.
+
+sophia_oracles_excessive_query_fee(_Cfg) ->
+    state(aect_test_utils:new_state()),
+    Acc               = ?call(new_account, 1000000),
+    Ct = <<CtId:256>> = ?call(create_contract, Acc, oracles, {}, #{amount => 0}),
+    QueryFee          = 100,
+    CtId              = ?call(call_contract, Acc, Ct, registerOracle, word, {CtId, 0, QueryFee, 15}),
+    Question          = <<"why?">>,
+    CreateQArgs       = fun(QF) -> {Ct, Question, QF, 5, 5} end,
+    CreateQReturnType = word,
+    CreateQOpts       = fun(V) -> #{amount => V} end,
+    QueryFeeExcess    = 1,
+    ExcessiveQueryFee = QueryFeeExcess + QueryFee,
+    StateSnapshot     = state(),
+    QId               = ?call(call_contract, Acc, Ct, createQuery, CreateQReturnType, CreateQArgs(ExcessiveQueryFee), CreateQOpts(ExcessiveQueryFee)),
+    ActAccB           = ?call(account_balance, Acc),
+    ActCtB            = ?call(account_balance, Ct),
+    Question          = ?call(call_contract, Acc, Ct, getQuestion, string, {CtId, QId}),
+
+    %% Excessive query fee with sufficient call value is accepted with
+    %% balances compatible to sufficient query fee.
+    {QId, AuxS}  = call_contract(Acc, Ct, createQuery, CreateQReturnType, CreateQArgs(QueryFee), CreateQOpts(QueryFee), StateSnapshot),
+    {AuxAccB, _} = account_balance(Acc, AuxS),
+    {AuxCtB, _}  = account_balance(Ct, AuxS),
+    ?assertEqual({AuxAccB-QueryFeeExcess, AuxCtB}, {ActAccB, ActCtB}),
     ok.
 
 %% Testing map functions and primitives
