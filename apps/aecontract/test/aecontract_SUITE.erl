@@ -577,29 +577,73 @@ sophia_oracles(_Cfg) ->
     ok.
 
 sophia_oracles_excessive_query_fee(_Cfg) ->
-    state(aect_test_utils:new_state()),
-    Acc               = ?call(new_account, 1000000),
-    Ct = <<CtId:256>> = ?call(create_contract, Acc, oracles, {}, #{amount => 0}),
+    %% Setup accounts of oracle operator and oracle user.
+    {AccOp, S0Op} = new_account(1000000, aect_test_utils:new_state()),
+    {AccU, S0}    = new_account(1000000, S0Op),
+
+    %% Query fee and its excess.
     QueryFee          = 100,
-    CtId              = ?call(call_contract, Acc, Ct, registerOracle, word, {CtId, 0, QueryFee, 15}),
-    Question          = <<"why?">>,
-    CreateQArgs       = fun(QF) -> {Ct, Question, QF, 5, 5} end,
-    CreateQReturnType = word,
-    CreateQOpts       = fun(V) -> #{amount => V} end,
     QueryFeeExcess    = 1,
     ExcessiveQueryFee = QueryFeeExcess + QueryFee,
-    StateSnapshot     = state(),
-    QId               = ?call(call_contract, Acc, Ct, createQuery, CreateQReturnType, CreateQArgs(ExcessiveQueryFee), CreateQOpts(ExcessiveQueryFee)),
-    ActAccB           = ?call(account_balance, Acc),
-    ActCtB            = ?call(account_balance, Ct),
-    Question          = ?call(call_contract, Acc, Ct, getQuestion, string, {CtId, QId}),
 
-    %% Excessive query fee with sufficient call value is accepted with
-    %% balances compatible to sufficient query fee.
-    {QId, AuxS}  = call_contract(Acc, Ct, createQuery, CreateQReturnType, CreateQArgs(QueryFee), CreateQOpts(QueryFee), StateSnapshot),
-    {AuxAccB, _} = account_balance(Acc, AuxS),
-    {AuxCtB, _}  = account_balance(Ct, AuxS),
-    ?assertEqual({AuxAccB-QueryFeeExcess, AuxCtB}, {ActAccB, ActCtB}),
+    %% Helpers.
+    Question = <<"why?">>,
+    InitOracleOp =
+        fun(_InitialContractBalance = V, S) ->
+                {Ct = <<CtId:256>>, SS} = create_contract(AccOp, oracles, {}, #{amount => V}, S),
+                {CtId, SSS} = call_contract(AccOp, Ct, registerOracle, word, {CtId, 0, QueryFee, 15}, SS),
+                {Ct, SSS}
+        end,
+    CreateQuery = fun(TxF, Ct, V, QF, S) -> call_contract(AccU, Ct, createQuery, word, {Ct, Question, QF, 5, 5}, #{fee => TxF, gas_price => 0, amount => V}, S) end,
+    Bal = fun(A, S) -> {B, S} = account_balance(A, S), B end,
+    CheckQuery =
+        fun(Ct = <<CtId:256>>, QId, QF, S) ->
+                {Question, _} = call_contract(AccOp, Ct, getQuestion, string, {CtId, QId}, S),
+                TxFee = 2,
+                {{}, SS} = call_contract(AccOp, Ct, respond, {tuple, []}, {CtId, QId, 0, 4001}, #{fee => TxFee, gas_price => 0}, S),
+                {{some, 4001}, _} = call_contract(AccOp, Ct, getAnswer, {option, word}, {CtId, QId}, SS),
+                ?assertEqual(Bal(AccU, S), Bal(AccU, SS)),
+                ?assertEqual(Bal(Ct, S)+QF, Bal(Ct, SS)),
+                ?assertEqual(Bal(AccOp, S)-TxFee, Bal(AccOp, SS)),
+                ok
+        end,
+
+    %% Run reference case i.e. no excess in the query fee specified
+    %% when creating the query compared to the query fee specified in
+    %% the oracle.
+    {Ct = <<CtId:256>>, SA1} = InitOracleOp(0, S0),
+    {QId, SA2} = CreateQuery(2, Ct, QueryFee, QueryFee, SA1),
+    ?assertEqual(Bal(AccU, SA1)-(2+QueryFee), Bal(AccU, SA2)),
+    ?assertEqual(Bal(Ct, SA1), Bal(Ct, SA2)),
+    ?assertEqual(Bal(AccOp, SA1), Bal(AccOp, SA2)),
+    ok = CheckQuery(Ct, QId, QueryFee, SA2),
+
+    %% Excessive query fee not covered by call tx value does not use
+    %% contract balance.
+    {Ct = <<CtId:256>>, SB1} = InitOracleOp(QueryFeeExcess + 10, S0),
+    {error, SB2} = CreateQuery(2, Ct, QueryFee, ExcessiveQueryFee, SB1),
+    ?assertEqual(Bal(AccU, SB1)-(2+QueryFee), Bal(AccU, SB2)),
+    ?assertEqual(Bal(Ct, SB1)+QueryFee, Bal(Ct, SB2)),
+    ?assertEqual(Bal(AccOp, SB1), Bal(AccOp, SB2)),
+
+    %% Call tx value in excess of query fee specified in same tx ends
+    %% up in contract contract.
+    {Ct = <<CtId:256>>, SC1} = InitOracleOp(0, S0),
+    {QId, SC2} = CreateQuery(2, Ct, ExcessiveQueryFee, QueryFee, SC1),
+    ?assertEqual(Bal(AccU, SC1)-(2+ExcessiveQueryFee), Bal(AccU, SC2)),
+    ?assertEqual(Bal(Ct, SC1)+QueryFeeExcess, Bal(Ct, SC2)),
+    ?assertEqual(Bal(AccOp, SC1), Bal(AccOp, SC2)),
+    ok = CheckQuery(Ct, QId, QueryFee, SC2),
+
+    %% Excessive query fee (covered by call tx value) is awarded to
+    %% oracle contract.
+    {Ct = <<CtId:256>>, SD1} = InitOracleOp(0, S0),
+    {QId, SD2} = CreateQuery(2, Ct, ExcessiveQueryFee, ExcessiveQueryFee, SD1),
+    ?assertEqual(Bal(AccU, SD1)-(2+ExcessiveQueryFee), Bal(AccU, SD2)),
+    ?assertEqual(Bal(Ct, SD1), Bal(Ct, SD2)),
+    ?assertEqual(Bal(AccOp, SD1), Bal(AccOp, SD2)),
+    ok = CheckQuery(Ct, QId, ExcessiveQueryFee, SD2),
+
     ok.
 
 %% Testing map functions and primitives
